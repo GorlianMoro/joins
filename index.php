@@ -1,4 +1,14 @@
 <?php
+
+if (isset($_SESSION['login']))
+{
+  echo "сессия есть";
+}
+else
+{
+  echo "сессии нет";
+}
+
 include 'mysqlConect.php';
 
 if (isset($_POST['description']))
@@ -9,6 +19,36 @@ if (!empty($desc)) {
     $sql = $pdo->exec("insert into tasks (description, date_added) values ('$desc', NOW())");
 }
 $fulldesc = $pdo->query("select * from tasks");
+$id = $_GET['id'];
+if (isset($_POST['edit']))
+{
+  $descr = htmlentities($_POST['edit']);
+}
+if (!empty($descr))
+{
+  $edit = $pdo->query("update tasks set description = $descr where id = $id");
+}
+
+$done = $_GET['is_done'];
+if (empty($_GET['is_done']))
+{
+  $isdone = $pdo->query("update tasks set is_done = 1 where id = $id");
+}
+
+if (empty($_POST['drop']))
+{
+  $drop = $pdo->query("delete from tasks where id = $id");
+}
+var_dump($_GET);
+var_dump($_POST);
+
+$fullusers = $pdo->prepare("select id, login from users");
+$fullusers->execute();
+if (isset($_POST['editUser']))
+{
+
+}
+
  ?>
 
  <!DOCTYPE html>
@@ -17,13 +57,13 @@ $fulldesc = $pdo->query("select * from tasks");
      <meta charset="utf-8">
      <title>Список дел</title>
      <style>
-       table {
-        border: 2px solid black;
-        text-align: center;
-      }
-      td {
-       border: 1px solid black;
-     }
+     table {
+            border-collapse: collapse;
+        }
+
+        table td, table th {
+            border: 1px solid black;
+          }
      </style>
    </head>
    <body>
@@ -55,20 +95,25 @@ $fulldesc = $pdo->query("select * from tasks");
            <th>Статус</th>
            <th>Дата добавления</th>
            <th></th>
+           <th>Ответственный</th>
+           <th>Автор</th>
+           <th>Закрепить задачу за пользователем</th>
          </tr>
          <tr>
-
            <?php
-           while ($row = $fulldesc->fetch()) {
+           foreach ($fulldesc as $row)
+           {
      ?>
              <td><?php echo $row['description'] . "<br />"; ?></td>
-             <td><?php echo $row['is_done'] . "<br />";
+             <td>
+            <?php
              if ($row['is_done'] == 0) {
                echo "В процессе";
              } else {
                echo "Выполненно";
              }
-             ?></td>
+             ?>
+           </td>
              <td><?php echo $row['date_added'] . "<br />"; ?></td>
              <td>
                <form class="" action="<?echo $row['id']?>" method="post" name="edit">
@@ -79,35 +124,25 @@ $fulldesc = $pdo->query("select * from tasks");
                  <a href="index.php?id=<?echo $row['id'];?>&action=done">Выполнить</a>
                </form>
                <form class="" action="index.php<?php echo "action=delete"; ?>" method="post" name="drop">
-                 <a href="index.php?id=<?echo $row['id'];?>&action=delete">Удалить</a>
                </form>
+               <a href="index.php?id=<?echo $row['id'];?>&action=delete">Удалить</a>
             </td>
+            <td></td>
+            <td></td>
+            <td>
+                <form class="" action="index.html" method="post">
+                <select class="" name="userlist">
+                  <?php foreach ($fullusers as $user): ?>
+                  <option value=""><?php echo $user['login'] . "<br />"; ?></option>
+                <?php endforeach; ?>
+                </select>
+                <input type="submit" name="editUser" value="Переложить ответственноость">
+              </form>
+          </td>
          </tr>
-         <?php
-         $id = $_GET['id'];
-         if (isset($_GET['id'])) {
-           $id = htmlentities($_GET['id']);
-         }
-         if (isset($_POST['edit'])) {
-           $descr = htmlentities($_POST['edit']);
-         }
-         if (!empty($descr)) {
-           $edit = $pdo->query("update tasks set description = $descr where id = $id");
-         }
-
-         $done = $_GET['is_done'];
-         if (empty($_GET['is_done'])) {
-           $isdone = $pdo->query("update tasks set is_done = 1 where id = $id");
-         }
-
-         if (empty($_POST['drop'])) {
-           $drop = $pdo->query("delete from tasks where id = $id");
-         }
- }
-var_dump($_GET);
-var_dump($_POST);
- ?>
        </tbody>
+         <?php
+       } ?>
      </table>
    </body>
 </html>
